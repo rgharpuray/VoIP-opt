@@ -14,15 +14,20 @@ int main(int argc, char **argv)
 {
   int sockfd, portnum, serverlen;
   struct sockaddr_in server_addr;
-  struct hostent *server;
+  
+  unsigned int addr = inet_addr("127.0.0.1");
+  struct hostent *server  = gethostbyaddr((char *) &addr, 4, AF_INET);
   char payload[PAYLOAD_SIZE];
   portnum = atoi(argv[1]);
-  
+    
+
   //socket
   sockfd = socket(AF_INET, SOCK_DGRAM, 0);
   if(sockfd < 0) printf("Couldn't open socket.\n");
   
-  //need to get server by host name somehow...
+  unsigned int addr = inet_addr("111:111:111:111");
+  hostent *he = gethostbyaddr((char *) &addr, 4, AF_INET);
+
 
   //setup info about server
   bzero((char *) &server_addr, sizeof(serveraddr));
