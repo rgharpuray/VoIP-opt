@@ -55,15 +55,18 @@ int main(int argc, char* argv[])
   
   saddr.sin_addr.s_addr = ip_addr;
   
+  /*
   const uint8_t init_message[] = {57, 36, 104, 39, 11, 207, 192, 126}; 
   if(sendto(sockfd,init_message,sizeof(init_message),0,(struct sockaddr*)&saddr,sizeof(saddr)) < 0) {
     fprintf(stderr,"Error: Send failed.\n");
     return 1;
   }
+  */
   
   struct sockaddr_in caddr;
   socklen_t caddr_len = sizeof(caddr);
   //buffer to store messages
+  /*
   uint8_t* buf = malloc(4092);
   int len;
   len = recvfrom(sockfd,buf,4092,0,(struct sockaddr*)&caddr,&caddr_len);
@@ -81,9 +84,9 @@ int main(int argc, char* argv[])
       return 1;
     }
   }
+  */
   
-  fprintf(stderr,"Notice: Recieved initialization message correctly.\n");
-  return 0;
+  fprintf(stderr,"Notice: Socket initialized.\n");
   
   PaStream* stream;
   PaError err;
@@ -112,22 +115,18 @@ int main(int argc, char* argv[])
     if(err != paNoError) {
       //fprintf(stderr,"Warning: PortAudio input overflow.\n");
     }
-    int nwrite = fwrite((void*)sbuf,sizeof(SAMPLE),FRAMES_PER_BUFFER,stdout);
-    if(nwrite != FRAMES_PER_BUFFER) {
-      err = Pa_StopStream(stream);
-      if(err != paNoError) goto error;
-      free(sbuf);
-      Pa_Terminate();
-      return 0;
+    if(sendto(sockfd,sbuf,sizeof(SAMPLE)*FRAMES_PER_BUFFER,0,(struct sockaddr*)&saddr,sizeof(saddr)) < 0) {
+      fprintf(stderr,"Error: Send failed.\n");
+      goto error;
     }
-    fflush(stdout);
-    int nread = fread((void*)sbuf,sizeof(SAMPLE),FRAMES_PER_BUFFER,stdin);
-    if(nread != FRAMES_PER_BUFFER) {
-      err = Pa_StopStream(stream);
-      if(err != paNoError) goto error;
-      free(sbuf);
-      Pa_Terminate();
-      return 0;
+    int len = recvfrom(sockfd,sbuf,4092,0,(struct sockaddr*)&caddr,&caddr_len);
+    if(len <= 0) {
+      fprintf(stderr,"Error: Recieve failed.\n");
+      goto error;
+    }
+    if(len != sizeof(SAMPLE)*FRAMES_PER_BUFFER) {
+      fprintf(stderr,"Error: Received message is not the expected length.\n");
+      goto error;
     }
     err = Pa_WriteStream(stream,sbuf,FRAMES_PER_BUFFER);
     if(err != paNoError) {
