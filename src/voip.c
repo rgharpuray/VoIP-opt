@@ -46,6 +46,13 @@ int main(int argc, char* argv[])
   bzero(&saddr, sizeof(saddr));
   saddr.sin_family = AF_INET;
   saddr.sin_port = htons((uint16_t)iport);
+  saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  
+  if(bind(sockfd,(struct sockaddr*)&saddr,sizeof(saddr))<0) {
+    fprintf(stderr,"Error: Couldn't bind socket.\n");
+    return 1;
+  }
+  
   saddr.sin_addr.s_addr = ip_addr;
   
   const uint8_t init_message[] = {57, 36, 104, 39, 11, 207, 192, 126}; 
