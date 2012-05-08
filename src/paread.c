@@ -38,7 +38,9 @@ int main(int argc, char* argv[])
   
   while(1) {
     err = Pa_ReadStream(stream,(void*)sbuf,FRAMES_PER_BUFFER);
-    if(err != paNoError) goto error;
+    if(err != paNoError) {
+      //fprintf(stderr,"Warning: PortAudio input overflow.\n");
+    }
     /*
     for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
       qbuf[i] = (signed char)(127.0f*sbuf[i]);
