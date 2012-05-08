@@ -1,13 +1,21 @@
 
-all: bin/voip
+CFLAGS := -std=gnu99
 
-bin/voip: bin/main.o
-	gcc -lportaudio bin/main.o -o bin/voip 
+all: bin obj bin/voip bin/main bin/paread bin/pawrite bin/udptestclient bin/udptestserv
 
-bin/main.o: src/main.c
-	gcc -c src/main.c -o bin/main.o
+bin:
+	mkdir bin
+
+obj:
+	mkdir obj
+
+bin/%: obj/%.o
+	gcc $< -lportaudio -o $@
+
+obj/%.o: src/%.c
+	gcc -c $(CFLAGS) $< -o $@
+
 
 clean:
-	rm -f bin/*.o bin/voip
-
+	rm -f bin/* obj/*
 
