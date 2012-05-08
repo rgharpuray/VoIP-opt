@@ -52,7 +52,9 @@ int main(int argc, char* argv[])
     }
     */
     err = Pa_WriteStream(stream,sbuf,FRAMES_PER_BUFFER);
-    if(err != paNoError) goto error;
+    if(err != paNoError) {
+      //fprintf(stderr,"Warning: PortAudio output underflow.\n");
+    }
   }
 error:
   if(stream) {
