@@ -91,6 +91,19 @@ paTestData;
 
 #define FILTER_NTAPS (40)
 
+//lowpass filter at 0.15
+SAMPLE filter[] = {
+  4.66951e-19, 0.000650381, 0.00146402, 0.00240243, 0.00317024,
+  0.00321638, 0.00189097, -0.00126623, -0.00619211, -0.0120462,
+  -0.0171583, -0.0192504, -0.0159253, -0.00531741, 0.0132617,
+  0.0388817, 0.0689114, 0.0993663, 0.125637, 0.143436,
+  0.149734, 0.143436, 0.125637, 0.0993663, 0.0689114,
+  0.0388817, 0.0132617, -0.00531741, -0.0159253, -0.0192504,
+  -0.0171583, -0.0120462, -0.00619211, -0.00126623, 0.00189097,
+  0.00321638, 0.00317024, 0.00240243, 0.00146402, 0.000650381,
+  4.66951e-19};
+
+  /*
 //lowpass filter at 0.2
 SAMPLE filter[] = { 
   -6.25225e-19, -0.000845602, -0.00172831, -0.00232308, -0.00196757,
@@ -102,9 +115,9 @@ SAMPLE filter[] = {
   -4.22027e-18, 0.00798022, 0.0100613, 0.00773058, 0.00361199,
   1.67819e-18, -0.00196757, -0.00232308, -0.00172831, -0.000845602,
   -6.25225e-19};
-  
+  */
 //highpass filter at 0.2
-/*
+/* = 0.0f
 SAMPLE filter[] = { 
   -6.25225e-19, -0.000845602, -0.00172831, -0.00232308, -0.00196757,
   1.67819e-18, 0.00361199, 0.00773058, 0.0100613, 0.00798022,
@@ -149,6 +162,8 @@ static int recordCallback( const void *inputBuffer, void *outputBuffer,
   int finished;
   unsigned long framesLeft = data->maxFrameIndex - data->frameIndex;
   
+  static SAMPLE accbuf[FRAMES_PER_BUFFER*NUM_CHANNELS];
+  
   (void) outputBuffer; /* Prevent unused variable warnings. */
   (void) timeInfo;
   (void) statusFlags;
@@ -167,6 +182,7 @@ static int recordCallback( const void *inputBuffer, void *outputBuffer,
   
   if( inputBuffer == NULL )
   {
+    printf("warning: input buffer is NULL\n");
     memset(wptr,0,framesToCalc*NUM_CHANNELS*sizeof(SAMPLE));
     /*
     for( i=0; i<framesToCalc; i++ )
@@ -183,10 +199,16 @@ static int recordCallback( const void *inputBuffer, void *outputBuffer,
     for( i=0; i<framesToCalc; i++ )
     {
       for(f=0; f < NUM_CHANNELS; f++) {
-        wptr[i*NUM_CHANNELS+f] = 0.0f;
+        accbuf[i*NUM_CHANNELS+f] = 0.0f;
         for(k = 0; k <= FILTER_NTAPS; k++) {
-          wptr[i*NUM_CHANNELS+f] += sptr[(i-k)*NUM_CHANNELS+f] * filter[k];
+          accbuf[i*NUM_CHANNELS+f] += sptr[(i-k)*NUM_CHANNELS+f] * filter[k];
         }
+      }
+    }
+    for( i=0; i<framesToCalc; i++ )
+    {
+      for(f=0; f < NUM_CHANNELS; f++) {
+        wptr[i*NUM_CHANNELS+f] = ((float)((signed char)(128.0*accbuf[5*(i/5)*NUM_CHANNELS+f])))/128.0;
       }
     }
     memcpy(data->saveBuffer,rptr+(framesToCalc-FILTER_NTAPS)*NUM_CHANNELS,FILTER_NTAPS*NUM_CHANNELS*sizeof(SAMPLE));
