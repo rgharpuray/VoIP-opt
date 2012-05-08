@@ -27,13 +27,13 @@ int main(int argc, char **argv)
   if(sockfd < 0) printf("Couldn't open socket.\n");
   
   //setup server's inet address info
-  bzero((char *) &server_addr, sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  server_addr.sin_port = htons((unsigned short)portnum);
+  bzero((char *) &serv_addr, sizeof(serv_addr));
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  serv_addr.sin_port = htons((unsigned short)portnum);
 
   //bind the parent socket to the port
-  int bind_result = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+  int bind_result = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
   if(bind_result < 0) printf("Bind error.\n");
 
   clientlen = sizeof(client_addr);
