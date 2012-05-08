@@ -1,7 +1,7 @@
 
-CFLAGS := -std=gnu99
+CFLAGS := -g -std=gnu99
 
-all: bin obj bin/voip bin/main bin/paread bin/pawrite bin/udptestclient bin/udptestserv
+all: bin obj bin/voip bin/main bin/paread bin/pawrite bin/pareadwrite bin/udptestclient bin/udptestserv
 
 bin:
 	mkdir bin
