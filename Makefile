@@ -6,8 +6,6 @@ bin/voip: bin/main.o
 
 bin/main.o: src/main.c
 	gcc -c src/main.c -o bin/main.o
-
 clean:
 	rm -f bin/*.o bin/voip
-
 
