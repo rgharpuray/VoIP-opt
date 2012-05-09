@@ -22,6 +22,9 @@ typedef uint8_t QSAMPLE;
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
+SAMPLE filter_num[] = {-1.0f,1.0f};
+SAMPLE filter_den[] = {2.0f};
+
 float distort(float x);
 float undistort(float x);
 float sgn(float x);
@@ -60,11 +63,54 @@ static int voipCallback( const void *inputBuffer, void *outputBuffer,
                            void *userData );
 
 typedef struct {
+  SAMPLE* src;
+  SAMPLE* dst;
+  int num_ord;
+  int den_ord;
+  const SAMPLE* num;
+  const SAMPLE* den;
+} FilterData;
+
+void filterdata_init(FilterData* pfd, const SAMPLE* num, int num_ord, const SAMPLE* den, int den_ord)
+{
+  pfd->src = malloc((FRAMES_PER_BUFFER+num_ord)*sizeof(SAMPLE));
+  pfd->dst = malloc((FRAMES_PER_BUFFER+den_ord)*sizeof(SAMPLE));
+  pfd->num_ord = num_ord;
+  pfd->den_ord = den_ord;
+  pfd->num = num;
+  pfd->den = den;
+  for(int i = 0; i < num_ord; i++) {
+    pfd->src[i] = 0.0f;
+  }
+  for(int i = 0; i < den_ord; i++) {
+    pfd->dst[i] = 0.0f;
+  }
+}
+
+SAMPLE* filter_src(FilterData* pfd);
+void filter(FilterData* pfd);
+const SAMPLE* filter_dst(FilterData* pfd);
+
+typedef struct {
+  //buffering data
   QSAMPLE* inbuf;
   volatile int inbuf_valid;
   QSAMPLE* outbuf;
   volatile int outbuf_valid;
+  //filtering data
+  FilterData infilter;
+  FilterData outfilter;
 } VoipData;
+
+void voipdata_init(VoipData* pvd)
+{
+  pvd->inbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
+  pvd->inbuf_valid = 0;
+  pvd->outbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
+  pvd->outbuf_valid = 0;
+  filterdata_init(&pvd->infilter, filter_num, sizeof(filter_num)-1, filter_den, sizeof(filter_den)-1);
+  filterdata_init(&pvd->outfilter, filter_den, sizeof(filter_den)-1, filter_num, sizeof(filter_num)-1);
+}
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
                            unsigned long framesPerBuffer,
@@ -75,17 +121,28 @@ static int voipCallback( const void *inputBuffer, void *outputBuffer,
   VoipData* data = (VoipData*)userData;
   
   if((inputBuffer != NULL)||(data->inbuf_valid == 0)) {
-    const SAMPLE* rptr = (const SAMPLE*)inputBuffer;
+    //copy the data in for filtering
+    memcpy(filter_src(&data->infilter),inputBuffer,FRAMES_PER_BUFFER*sizeof(SAMPLE));
+    //do the filtering
+    filter(&data->infilter);
+    //retrieve the data
+    const SAMPLE* rptr = filter_dst(&data->infilter);
+    //quantize the data
     for(int i = 0; i < framesPerBuffer; i++) {
       data->inbuf[i] = sample_to_qsample(rptr[i]);
     }
     data->inbuf_valid = 1;
   }
   if(data->outbuf_valid == 1) {
-    SAMPLE* wptr = (SAMPLE*)outputBuffer;
+    //unquantize the data and copy it in for filtering
+    SAMPLE* fptr = filter_src(&data->outfilter);
     for(int i = 0; i < framesPerBuffer; i++) {
-      wptr[i] = qsample_to_sample(data->outbuf[i]);
+      fptr[i] = qsample_to_sample(data->outbuf[i]);
     }
+    //do the filtering
+    filter(&data->outfilter);
+    //retrieve the data
+    memcpy(outputBuffer,filter_dst(&data->outfilter),FRAMES_PER_BUFFER*sizeof(SAMPLE));
     data->outbuf_valid = 0;
   }
   return paContinue;
@@ -126,10 +183,7 @@ int main(int argc, char* argv[])
   
   //initialize VOIP data
   VoipData vd;
-  vd.inbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
-  vd.inbuf_valid = 0;
-  vd.outbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
-  vd.outbuf_valid = 0;
+  voipdata_init(&vd);
   
   fprintf(stderr,"Starting audio stream...\n");
   
@@ -274,6 +328,33 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     //ready to start audio stream
   }
 }
+/*
+typedef struct {
+  SAMPLE* src;
+  SAMPLE* dst;
+  int num_ord;
+  int den_ord;
+  const SAMPLE* num;
+  const SAMPLE* den;
+} FilterData;
+*/
+SAMPLE* filter_src(FilterData* pfd)
+{
+  return pfd->src + pfd->num_ord;
+}
+
+void filter(FilterData* pfd)
+{
+  for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
+    pfd->dst[pfd->den_ord + i] = pfd->src[pfd->num_ord + i];
+  }
+}
+
+const SAMPLE* filter_dst(FilterData* pfd)
+{
+  return pfd->dst + pfd->den_ord;
+}
+
 
 int parse_args(VoipArgs* pva, int argc, char* argv[])
 {
