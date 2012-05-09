@@ -15,13 +15,13 @@
 #define PA_SAMPLE_TYPE  paFloat32
 
 typedef float SAMPLE;
-typedef int8_t QSAMPLE;
+typedef uint8_t QSAMPLE;
 
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
 QSAMPLE sample_to_qsample(SAMPLE x) {
-  return (int8_t)(255.0f*((x+1.0f)/2.0f));
+  return (uint8_t)(255.0f*((x+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
