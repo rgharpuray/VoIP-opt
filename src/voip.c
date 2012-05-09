@@ -27,11 +27,11 @@ float undistort(float x);
 float sgn(float x);
 
 QSAMPLE sample_to_qsample(SAMPLE x) {
-  return (uint8_t)(255.0f*((x+1.0f)/2.0f));
+  return (uint8_t)(255.0f*((distort(x)+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
-  return (2.0f*(((float)x)/256.0f))-1.0f;
+  return undistort((2.0f*(((float)x)/255.0f))-1.0f);
 }
 
 const float mu = 255.0f;
