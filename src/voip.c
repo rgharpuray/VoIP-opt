@@ -11,7 +11,7 @@
 #include <netdb.h>
 
 #define SAMPLE_RATE (8000)
-#define FRAMES_PER_BUFFER (512)
+#define FRAMES_PER_BUFFER (128)
 #define PA_SAMPLE_TYPE  paFloat32
 
 typedef float SAMPLE;
