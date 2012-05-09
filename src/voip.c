@@ -108,8 +108,8 @@ void voipdata_init(VoipData* pvd)
   pvd->inbuf_valid = 0;
   pvd->outbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
   pvd->outbuf_valid = 0;
-  filterdata_init(&pvd->infilter, filter_num, sizeof(filter_num)-1, filter_den, sizeof(filter_den)-1);
-  filterdata_init(&pvd->outfilter, filter_den, sizeof(filter_den)-1, filter_num, sizeof(filter_num)-1);
+  filterdata_init(&pvd->infilter, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1);
+  filterdata_init(&pvd->outfilter, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1);
 }
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
