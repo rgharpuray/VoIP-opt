@@ -345,8 +345,23 @@ SAMPLE* filter_src(FilterData* pfd)
 
 void filter(FilterData* pfd)
 {
+  //do the filtering
   for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
-    pfd->dst[pfd->den_ord + i] = pfd->src[pfd->num_ord + i];
+    SAMPLE acc = 0.0f;
+    for(int k = 0; k <= pfd->num_ord; k++) {
+      acc += pfd->num[k]*pfd->src[i+k];
+    }
+    for(int k = 0; k < pfd->den_ord; k++) {
+      acc -= pfd->den[k]*pfd->den[i+k];
+    }
+    pfd->dst[pfd->den_ord + i] = acc / pfd->den[pfd->den_ord];
+  }
+  //copy the data down for the next iteration
+  for(int k = 0; k < pfd->num_ord; k++) {
+    pfd->src[k] = pfd->src[FRAMES_PER_BUFFER+k];
+  }
+  for(int k = 0; k < pfd->den_ord; k++) {
+    pfd->dst[k] = pfd->dst[FRAMES_PER_BUFFER+k];
   }
 }
 
