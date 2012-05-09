@@ -63,6 +63,7 @@ static int voipCallback( const void *inputBuffer, void *outputBuffer,
     }
     data->outbuf_valid = 0;
   }
+  return paContinue;
 }
 
 typedef struct {
