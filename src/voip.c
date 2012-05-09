@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <time.h>
 #include <portaudio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -20,12 +22,35 @@ typedef uint8_t QSAMPLE;
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
+float distort(float x);
+float undistort(float x);
+float sgn(float x);
+
 QSAMPLE sample_to_qsample(SAMPLE x) {
   return (uint8_t)(255.0f*((x+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
   return (2.0f*(((float)x)/256.0f))-1.0f;
+}
+
+const float mu = 255.0f;
+
+float sgn(float x)
+{
+  if (x < 0.0f) return -1.0f;
+  else if(x == 0.0f) return 0.0f;
+  else return 1.0f;
+}
+
+float distort(float x)
+{
+  return sgn(x)*logf(1.0f+mu*fabsf(x))/logf(1.0f+mu);
+}
+
+float undistort(float y)
+{
+  return sgn(y)*(1.0f/mu)*(powf(1.0f+mu,fabsf(y))-1);
 }
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
