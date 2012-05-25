@@ -6,11 +6,14 @@
 #include <time.h>
 #include <portaudio.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <errno.h>
+#include <time.h>
 
 #define SAMPLE_RATE (8000)
 #define FRAMES_PER_BUFFER (128)
@@ -251,14 +254,24 @@ int connection_send(ConnectionData* pcd, const void* buf, size_t length)
 
 int connection_recv(ConnectionData* pcd, void* buf, size_t length)
 {
-  int msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);   
+  time_t start_time = time(NULL); int msglen;
+begin:
+  msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);
   if(msglen <= 0) {
-    fprintf(stderr,"Error: Recieve call failed.\n");
-    return 1;
+    if((errno == EAGAIN)||(errno == EWOULDBLOCK)) {
+      if(time(NULL) - start_time <= 1) goto begin;
+      else fprintf(stderr, "Warning: Recieve dropped.\n");
+    }
+    else {
+      fprintf(stderr,"Error: Recieve call failed.\n");
+      return 1;
+    }
   }
-  if(msglen != length) {
-    fprintf(stderr,"Error: Recieved message has expected length.\n");
-    return 1;
+  else {
+    if(msglen != length) {
+      fprintf(stderr,"Error: Recieved message has expected length.\n");
+      return 1;
+    }
   }
   return 0;
 }
@@ -280,6 +293,7 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     fprintf(stderr,"Error: Couldn't open socket.\n");
     return 1;
   }
+  fcntl(pcd->sockfd, F_SETFL, fcntl(pcd->sockfd,F_GETFL,0) | O_NONBLOCK);
   
   if(pva->is_server) {
     //set up and bind the socket
