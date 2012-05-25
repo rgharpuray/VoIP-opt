@@ -221,9 +221,13 @@ int main(int argc, char* argv[])
     //wait for output data to be consumed
     if(vd.outbuf_valid == 0) {
       //receive some from the network
-      int result = connection_recv(&cd,vd.outbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE));
+      int result;
+      int makebufvalid = 0;
+      while((result = connection_recv(&cd,vd.outbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE)))==0) {
+        makebufvalid = 1;
+      }
       if(result < 0) goto error;
-      if(result == 0) {
+      if(makebufvalid) {
         //signal that the output data is now valid
         vd.outbuf_valid = 1;
       }
