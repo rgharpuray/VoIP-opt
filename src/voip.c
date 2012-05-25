@@ -28,21 +28,21 @@ inline SAMPLE qsample_to_sample(QSAMPLE x);
 SAMPLE filter_num[] = {-0.5f, 1.0f};
 SAMPLE filter_den[] = {1.0f};
 
-SAMPLE filter_scale = 0.5f;
+SAMPLE filter_scale = 0.3f;
 
 float distort(float x);
 float undistort(float x);
 float sgn(float x);
 
+const float mu = 16.0f;
+
 QSAMPLE sample_to_qsample(SAMPLE x) {
-  return (uint8_t)lroundf(255.0f*((distort(x)+1.0f)/2.0f));
+  return (uint8_t)lroundf(mu*((distort(x)+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
-  return undistort((2.0f*(((float)x)/255.0f))-1.0f);
+  return undistort((2.0f*(((float)x)/mu))-1.0f);
 }
-
-const float mu = 255.0f;
 
 float sgn(float x)
 {
