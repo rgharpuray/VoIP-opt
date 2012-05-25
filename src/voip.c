@@ -26,7 +26,7 @@ inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
 SAMPLE filter_num[] = {-0.5f, 1.0f};
-SAMPLE filter_den[] = {0.5f, 1.0f};
+SAMPLE filter_den[] = {1.0f};
 
 SAMPLE filter_scale = 0.5f;
 
@@ -35,7 +35,7 @@ float undistort(float x);
 float sgn(float x);
 
 QSAMPLE sample_to_qsample(SAMPLE x) {
-  return (uint8_t)(255.0f*((distort(x)+1.0f)/2.0f));
+  return (uint8_t)lroundf(255.0f*((distort(x)+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
