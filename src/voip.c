@@ -382,12 +382,12 @@ void filter(FilterData* pfd)
   for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
     SAMPLE acc = 0.0f;
     for(int k = 0; k <= pfd->num_ord; k++) {
-      acc += pfd->num[k]*pfd->src[i+k];
+      acc += filter_scale*pfd->num[k]*pfd->src[i+k];
     }
     for(int k = 0; k < pfd->den_ord; k++) {
       acc -= pfd->den[k]*pfd->den[i+k];
     }
-    pfd->dst[pfd->den_ord + i] = filter_scale * acc / pfd->den[pfd->den_ord];
+    pfd->dst[pfd->den_ord + i] = acc / pfd->den[pfd->den_ord];
   }
   //copy the data down for the next iteration
   for(int k = 0; k < pfd->num_ord; k++) {
