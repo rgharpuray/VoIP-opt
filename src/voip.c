@@ -212,17 +212,22 @@ int main(int argc, char* argv[])
   
   while(1) {
     //wait for input data
-    while(vd.inbuf_valid == 0);
-    //send it on the network
-    if(connection_send(&cd,vd.inbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE))!=0) goto error;
-    //signal that the input data has been used
-    vd.inbuf_valid = 0;
+    if(vd.inbuf_valid == 0) {
+      //send it on the network
+      if(connection_send(&cd,vd.inbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE))!=0) goto error;
+      //signal that the input data has been used
+      vd.inbuf_valid = 0;
+    }
     //wait for output data to be consumed
-    while(vd.outbuf_valid == 1);
-    //receive some from the network
-    if(connection_recv(&cd,vd.outbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE))!=0) goto error;
-    //signal that the output data is now valid
-    vd.outbuf_valid = 1;
+    if(vd.outbuf_valid == 1) {
+      //receive some from the network
+      int result = connection_recv(&cd,vd.outbuf,FRAMES_PER_BUFFER*sizeof(QSAMPLE));
+      if(result < 0) goto error;
+      if(result == 0) {
+        //signal that the output data is now valid
+        vd.outbuf_valid = 1;
+      }
+    }
   }
   
 error:
@@ -254,23 +259,20 @@ int connection_send(ConnectionData* pcd, const void* buf, size_t length)
 
 int connection_recv(ConnectionData* pcd, void* buf, size_t length)
 {
-  time_t start_time = time(NULL); int msglen;
-begin:
-  msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);
+  int msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);
   if(msglen <= 0) {
     if((errno == EAGAIN)||(errno == EWOULDBLOCK)) {
-      if(time(NULL) - start_time <= 1) goto begin;
-      else fprintf(stderr, "Warning: Recieve dropped.\n");
+      return 1;
     }
     else {
       fprintf(stderr,"Error: Recieve call failed.\n");
-      return 1;
+      return -1;
     }
   }
   else {
     if(msglen != length) {
       fprintf(stderr,"Error: Recieved message has expected length.\n");
-      return 1;
+      return -1;
     }
   }
   return 0;
@@ -278,7 +280,7 @@ begin:
 
 int connection_init(ConnectionData* pcd, const VoipArgs* pva)
 {
-  uint8_t msgbuf[256];
+  uint8_t msgbuf[256]; int result;
   
   const uint8_t client_message[] = {57, 36, 104, 39, 11, 207, 192, 126}; 
   const uint8_t server_message[] = {23, 24, 62, 111, 204, 123, 3, 2};
@@ -304,7 +306,8 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     }
     //read from the socket (wait for a "connection")
     fprintf(stderr,"Waiting for a connection on port %u...\n",pva->ip_port);
-    if(connection_recv(pcd,msgbuf,sizeof(client_message))!=0) {
+    while((result = connection_recv(pcd,msgbuf,sizeof(client_message)))==1);
+    if(result < 0) {
       return 1;
     }
     for(int i = 0; i < sizeof(client_message); i++) {
@@ -329,7 +332,8 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     }
     //receive server message
     fprintf(stderr,"Waiting for server response...\n");
-    if(connection_recv(pcd,msgbuf,sizeof(server_message))!=0) {
+    while((result = connection_recv(pcd,msgbuf,sizeof(server_message)))==1);
+    if(result < 0) {
       return 1;
     }
     for(int i = 0; i < sizeof(server_message); i++) {
