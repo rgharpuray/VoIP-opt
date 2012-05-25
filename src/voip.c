@@ -26,9 +26,9 @@ inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
 SAMPLE filter_num[] = {-0.5f, 1.0f};
-SAMPLE filter_den[] = {1.0f};
+SAMPLE filter_den[] = {0.5f, 1.0f};
 
-SAMPLE filter_scale = 0.3f;
+SAMPLE filter_scale = 0.5f;
 
 float distort(float x);
 float undistort(float x);
