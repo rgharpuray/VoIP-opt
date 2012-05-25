@@ -28,7 +28,7 @@ inline SAMPLE qsample_to_sample(QSAMPLE x);
 SAMPLE filter_num[] = {-0.8f, 1.0f};
 SAMPLE filter_den[] = {1.0f};
 
-SAMPLE filter_scale = 0.5f;
+SAMPLE filter_scale = 1.0f;
 
 float distort(float x);
 float undistort(float x);
@@ -389,7 +389,7 @@ void filter(FilterData* pfd)
     }
     for(int k = 0; k < pfd->den_ord; k++) {
       if((pfd->dst[i+k] >= 1.0f)||(pfd->dst[i+k] <= -1.0f)) {
-        fprintf(stderr, "Warning: Out-of-bounds source value %f\n", pfd->src[i+k]);
+        fprintf(stderr, "Warning: Out-of-bounds dst value %f\n", pfd->src[i+k]);
       }
       acc -= pfd->den[k]*pfd->dst[i+k];
     }
