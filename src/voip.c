@@ -25,8 +25,10 @@ typedef uint8_t QSAMPLE;
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
-SAMPLE filter_num[] = {1.0f, 0.0f};
+SAMPLE filter_num[] = {-0.8f, 1.0f};
 SAMPLE filter_den[] = {1.0f};
+
+SAMPLE filter_scale = 0.5f;
 
 float distort(float x);
 float undistort(float x);
@@ -368,6 +370,14 @@ SAMPLE* filter_src(FilterData* pfd)
 
 void filter(FilterData* pfd)
 {
+  /*
+  fprintf(stderr, "Notice: Filtering with #num = %d, #den = %d, #FB = %d, #DD = %f\n", pfd->num_ord, pfd->den_ord, FRAMES_PER_BUFFER, pfd->den[pfd->den_ord]);
+  fprintf(stderr, "Num =");
+  for(int nn = 0; nn <= pfd->num_ord; nn++) fprintf(stderr, " %f", pfd->num[nn]);
+  fprintf(stderr, "\nDen =");
+  for(int nn = 0; nn <= pfd->den_ord; nn++) fprintf(stderr, " %f", pfd->den[nn]);
+  fprintf(stderr, "\n");
+  */
   //do the filtering
   for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
     SAMPLE acc = 0.0f;
@@ -377,7 +387,7 @@ void filter(FilterData* pfd)
     for(int k = 0; k < pfd->den_ord; k++) {
       acc -= pfd->den[k]*pfd->den[i+k];
     }
-    pfd->dst[pfd->den_ord + i] = acc / pfd->den[pfd->den_ord];
+    pfd->dst[pfd->den_ord + i] = filter_scale * acc / pfd->den[pfd->den_ord];
   }
   //copy the data down for the next iteration
   for(int k = 0; k < pfd->num_ord; k++) {
