@@ -28,7 +28,7 @@ inline SAMPLE qsample_to_sample(QSAMPLE x);
 SAMPLE filter_num[] = {-0.8f, 1.0f};
 SAMPLE filter_den[] = {1.0f};
 
-SAMPLE filter_scale = 1.0f;
+SAMPLE filter_scale = 0.8f;
 
 float distort(float x);
 float undistort(float x);
@@ -382,23 +382,23 @@ void filter(FilterData* pfd)
   for(int i = 0; i < FRAMES_PER_BUFFER; i++) {
     SAMPLE acc = 0.0f;
     for(int k = 0; k <= pfd->num_ord; k++) {
-      if((pfd->src[i+k] >= 1.0f)||(pfd->src[i+k] <= -1.0f)) {
-        fprintf(stderr, "Warning: Out-of-bounds source value %f\n", pfd->src[i+k]);
-      }
+      //if((pfd->src[i+k] >= 1.0f)||(pfd->src[i+k] <= -1.0f)) {
+      //  fprintf(stderr, "Warning: Out-of-bounds source value %f\n", pfd->src[i+k]);
+      //}
       acc += filter_scale*pfd->num[k]*pfd->src[i+k];
     }
     for(int k = 0; k < pfd->den_ord; k++) {
-      if((pfd->dst[i+k] >= 1.0f)||(pfd->dst[i+k] <= -1.0f)) {
-        fprintf(stderr, "Warning: Out-of-bounds dst value %f\n", pfd->src[i+k]);
-      }
+      //if((pfd->dst[i+k] >= 1.0f)||(pfd->dst[i+k] <= -1.0f)) {
+      //  fprintf(stderr, "Warning: Out-of-bounds dst value %f\n", pfd->src[i+k]);
+      //}
       acc -= pfd->den[k]*pfd->dst[i+k];
     }
     float result = acc / pfd->den[pfd->den_ord];
-    if((result >= 1.0f)||(result <= -1.0f)) {
-      fprintf(stderr, "Warning: Out-of-bounds filtered result value %f\n", result);
-      if(result >= 1.0f) result = 1.0f;
-      if(result <= -1.0f) result = -1.0f;
-    }
+    //if((result >= 1.0f)||(result <= -1.0f)) {
+    //  fprintf(stderr, "Warning: Out-of-bounds filtered result value %f\n", result);
+    //  if(result >= 1.0f) result = 1.0f;
+    //  if(result <= -1.0f) result = -1.0f;
+    //}
     pfd->dst[pfd->den_ord + i] = result;
   }
   //copy the data down for the next iteration
