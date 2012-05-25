@@ -25,7 +25,7 @@ typedef uint8_t QSAMPLE;
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
-SAMPLE filter_num[] = {1.0f};
+SAMPLE filter_num[] = {1.0f, 0.0f};
 SAMPLE filter_den[] = {1.0f};
 
 float distort(float x);
@@ -113,6 +113,7 @@ void voipdata_init(VoipData* pvd)
   pvd->outbuf_valid = 0;
   filterdata_init(&pvd->infilter, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1);
   filterdata_init(&pvd->outfilter, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1);
+  fprintf(stderr, "Notice: Detected filtering with #num = %d and #den = %d\n", pvd->infilter.num_ord, pvd->infilter.den_ord);
 }
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
