@@ -43,8 +43,8 @@ inline SAMPLE qsample_to_sample(QSAMPLE x);
 
 SAMPLE src_filter_num[] = {-1.0f, 1.0f};
 SAMPLE src_filter_den[] = {2.0f};
-SAMPLE dst_filter_num[] = {1.0f};
-SAMPLE dst_filter_den[] = {1.0f};
+SAMPLE dst_filter_num[] = {0.000266f, 0.000664f, 0.001310f, 0.002325f, 0.003816f, 0.005874f, 0.008558f, 0.011888f, 0.015845f, 0.020359f, 0.025320f, 0.030575f, 0.035937f, 0.041197f, 0.046136f, 0.050535f, 0.054195f, 0.056942f, 0.058646f, -0.940777f, 0.058646f, 0.056942f, 0.054195f, 0.050535f, 0.046136f, 0.041197f, 0.035937f, 0.030575f, 0.025320f, 0.020359f, 0.015845f, 0.011888f, 0.008558f, 0.005874f, 0.003816f, 0.002325f, 0.001310f, 0.000664f, 0.000266f};
+SAMPLE dst_filter_den[] = {-2.0f, 2.0f};
 
 float distort(float x);
 float undistort(float x);
