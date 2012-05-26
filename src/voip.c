@@ -50,15 +50,15 @@ float distort(float x);
 float undistort(float x);
 float sgn(float x);
 
+const float mu = 127.0f;
+
 QSAMPLE sample_to_qsample(SAMPLE x) {
-  return (uint8_t)lroundf(255.0f*((distort(x)+1.0f)/2.0f));
+  return (uint8_t)lroundf(mu*((distort(x)+1.0f)/2.0f));
 }
 
 SAMPLE qsample_to_sample(QSAMPLE x) {
-  return undistort((2.0f*(((float)x)/255.0f))-1.0f);
+  return undistort((2.0f*(((float)x)/mu))-1.0f);
 }
-
-const float mu = 255.0f;
 
 float sgn(float x)
 {
@@ -350,8 +350,7 @@ int connection_recv(ConnectionData* pcd, void* buf, size_t length)
   transition();
   //based on state, call emit function which will decide to drop or accept packet based on prob
   int result = emission();
-  if(connected && (result == -1 || result == DROP)) { 
-    printf("Packet Dropped.\n");
+  if(connected && (result == -1 || result == DROP)) {
     return 1;
   }
   
