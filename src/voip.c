@@ -50,7 +50,7 @@ float distort(float x);
 float undistort(float x);
 float sgn(float x);
 
-const float mu = 127.0f;
+const float mu = 63.0f;
 
 QSAMPLE sample_to_qsample(SAMPLE x) {
   return (uint8_t)lroundf(mu*((distort(x)+1.0f)/2.0f));
