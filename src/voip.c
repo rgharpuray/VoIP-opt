@@ -23,6 +23,8 @@
 typedef float SAMPLE;
 typedef uint8_t QSAMPLE;
 
+int connected = 0;
+
 /*Handling for modeling loss via H.M.M.*/
 typedef int LOSSRATE_STATE;
 typedef float LOSSRATE;
@@ -348,11 +350,13 @@ int connection_recv(ConnectionData* pcd, void* buf, size_t length)
   transition();
   //based on state, call emit function which will decide to drop or accept packet based on prob
   int result = emission();
-  if(result == -1 || result == DROP) { 
+  if(connected && (result == -1 || result == DROP)) { 
     printf("Packet Dropped.\n");
     return 1;
   }
-
+  
+  //returning 0 on success
+  return 0;
 }
 
 int connection_init(ConnectionData* pcd, const VoipArgs* pva)
@@ -399,6 +403,7 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
       return 1;
     }
     //ready to start audio stream
+    connected = 1;
   }
   else {
     pcd->saddr.sin_addr.s_addr = pva->ip_addr;
@@ -421,6 +426,7 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     }
     fprintf(stderr,"Connected!\n");
     //ready to start audio stream
+    connected = 1;
   }
 }
 /*
