@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <time.h>
+#include "assert.h"
 
 #define SAMPLE_RATE (8000)
 #define FRAMES_PER_BUFFER (128)
@@ -21,6 +22,19 @@
 
 typedef float SAMPLE;
 typedef uint8_t QSAMPLE;
+
+/*Handling for modeling loss via H.M.M.*/
+typedef int LOSSRATE_STATE;
+typedef float LOSSRATE;
+#define START -1
+#define LOW_LOSS_RATE 0
+#define HIGH_LOSS_RATE 1
+LOSSRATE_STATE loss_state;
+LOSSRATE high_lr = 0.2f;
+LOSSRATE low_lr = 0.05f;
+
+#define ACCEPT 0
+#define DROP 1
 
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
@@ -212,7 +226,10 @@ int main(int argc, char* argv[])
   
   err = Pa_StartStream(stream);
   if(err != paNoError) goto error;
-  
+ 
+  //Initialize the loss state information
+  loss_state = START;
+   
   while(1) {
     //wait for input data
     if(vd.inbuf_valid == 1) {
@@ -254,6 +271,53 @@ error:
   return -1;
 }
 
+
+/*functions for H.M.M.*/
+void transition()
+{
+  //get random float between 0 and 1 inclusive to update state  
+  float random = ((float) rand())/ (float) RAND_MAX;
+  switch(loss_state)
+  {
+    case START:
+      loss_state = (random > 0.3) ? LOW_LOSS_RATE:HIGH_LOSS_RATE;
+      break;
+    case HIGH_LOSS_RATE:
+      loss_state = (random > 0.7) ? HIGH_LOSS_RATE:LOW_LOSS_RATE;
+      break;
+    case LOW_LOSS_RATE:
+      loss_state = (random > 0.8) ? HIGH_LOSS_RATE:LOW_LOSS_RATE;
+      break;
+    break;
+    default:
+      fprintf(stderr, "Error. Invalid Loss State.\n");
+  }
+}
+
+/*this function decides whether to drop or accept a packet based on loss rates
+associated with each state*/
+int emission()
+{
+  //we should have transitioned to high loss or low loss state already
+  assert(loss_state != START);
+
+  float random = ((float) rand())/ (float) RAND_MAX;
+  switch(loss_state)
+  {
+    case START:
+      return -1; //assert should capture this error 
+    case HIGH_LOSS_RATE:
+      return (random < high_lr) ? DROP:ACCEPT;      
+    case LOW_LOSS_RATE:
+      return (random < low_lr) ? DROP:ACCEPT;
+      break;
+    break;
+    default:
+      fprintf(stderr, "Error. Invalid Loss State.\n");
+    return -1;
+  }
+}
+
 int connection_send(ConnectionData* pcd, const void* buf, size_t length)
 {
   int result = sendto(pcd->sockfd, buf, length, 0, (struct sockaddr*) &pcd->saddr, pcd->saddrlen);
@@ -264,9 +328,19 @@ int connection_send(ConnectionData* pcd, const void* buf, size_t length)
   return 0;
 }
 
+//This function is modified to model packet loss
 int connection_recv(ConnectionData* pcd, void* buf, size_t length)
 {
   int msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);
+  
+  //transition states as needed
+  transition();
+
+  //based on state, call emit function which will decide to drop or accept packet based on prob
+  int result = emission();
+  if(result == -1 || result == DROP) 
+    return 1;
+
   if(msglen <= 0) {
     if((errno == EAGAIN)||(errno == EWOULDBLOCK)) {
       return 1;
