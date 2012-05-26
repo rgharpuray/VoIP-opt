@@ -280,15 +280,14 @@ void transition()
   switch(loss_state)
   {
     case START:
-      loss_state = (random > 0.3) ? LOW_LOSS_RATE:HIGH_LOSS_RATE;
+      loss_state = (random > 0.3) ? LOW_LOSS_RATE : HIGH_LOSS_RATE;
       break;
     case HIGH_LOSS_RATE:
-      loss_state = (random > 0.7) ? HIGH_LOSS_RATE:LOW_LOSS_RATE;
+      loss_state = (random > 0.7) ? HIGH_LOSS_RATE : LOW_LOSS_RATE;
       break;
     case LOW_LOSS_RATE:
-      loss_state = (random > 0.8) ? HIGH_LOSS_RATE:LOW_LOSS_RATE;
+      loss_state = (random > 0.8) ? HIGH_LOSS_RATE : LOW_LOSS_RATE;
       break;
-    break;
     default:
       fprintf(stderr, "Error. Invalid Loss State.\n");
   }
@@ -305,16 +304,14 @@ int emission()
   switch(loss_state)
   {
     case START:
-      return -1; //assert should capture this error 
+      return -1; //assert should capture this error
     case HIGH_LOSS_RATE:
-      return (random < high_lr) ? DROP:ACCEPT;      
+      return (random < high_lr) ? DROP : ACCEPT;   
     case LOW_LOSS_RATE:
-      return (random < low_lr) ? DROP:ACCEPT;
-      break;
-    break;
+      return (random < low_lr) ? DROP : ACCEPT;
     default:
       fprintf(stderr, "Error. Invalid Loss State.\n");
-    return -1;
+      return -1;
   }
 }
 
@@ -332,15 +329,6 @@ int connection_send(ConnectionData* pcd, const void* buf, size_t length)
 int connection_recv(ConnectionData* pcd, void* buf, size_t length)
 {
   int msglen = recvfrom(pcd->sockfd, buf, length, 0, (struct sockaddr*)&pcd->saddr, &pcd->saddrlen);
-  
-  //transition states as needed
-  transition();
-
-  //based on state, call emit function which will decide to drop or accept packet based on prob
-  int result = emission();
-  if(result == -1 || result == DROP) 
-    return 1;
-
   if(msglen <= 0) {
     if((errno == EAGAIN)||(errno == EWOULDBLOCK)) {
       return 1;
@@ -356,7 +344,12 @@ int connection_recv(ConnectionData* pcd, void* buf, size_t length)
       return -1;
     }
   }
-  return 0;
+  //transition states as needed
+  transition();
+  //based on state, call emit function which will decide to drop or accept packet based on prob
+  int result = emission();
+  if(result == -1 || result == DROP) 
+    return 1;
 }
 
 int connection_init(ConnectionData* pcd, const VoipArgs* pva)
