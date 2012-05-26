@@ -41,10 +41,10 @@ LOSSRATE low_lr = 0.05f;
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
-SAMPLE filter_num[] = {1.0f};
-SAMPLE filter_den[] = {1.0f};
-
-SAMPLE filter_scale = 1.0f;
+SAMPLE src_filter_num[] = {-1.0f, 1.0f};
+SAMPLE src_filter_den[] = {2.0f};
+SAMPLE dst_filter_num[] = {1.0f};
+SAMPLE dst_filter_den[] = {1.0f};
 
 float distort(float x);
 float undistort(float x);
@@ -129,9 +129,8 @@ void voipdata_init(VoipData* pvd)
   pvd->inbuf_valid = 0;
   pvd->outbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
   pvd->outbuf_valid = 0;
-  filterdata_init(&pvd->infilter, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1);
-  filterdata_init(&pvd->outfilter, filter_den, sizeof(filter_den)/sizeof(SAMPLE)-1, filter_num, sizeof(filter_num)/sizeof(SAMPLE)-1);
-  fprintf(stderr, "Notice: Detected filtering with #num = %d and #den = %d\n", pvd->infilter.num_ord, pvd->infilter.den_ord);
+  filterdata_init(&pvd->infilter, src_filter_num, sizeof(src_filter_num)/sizeof(SAMPLE)-1, src_filter_den, sizeof(src_filter_den)/sizeof(SAMPLE)-1);
+  filterdata_init(&pvd->outfilter, dst_filter_num, sizeof(dst_filter_num)/sizeof(SAMPLE)-1, dst_filter_den, sizeof(dst_filter_den)/sizeof(SAMPLE)-1);
 }
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
@@ -460,7 +459,7 @@ void filter(FilterData* pfd)
       //if((pfd->src[i+k] >= 1.0f)||(pfd->src[i+k] <= -1.0f)) {
       //  fprintf(stderr, "Warning: Out-of-bounds source value %f\n", pfd->src[i+k]);
       //}
-      acc += filter_scale*pfd->num[k]*pfd->src[i+k];
+      acc += pfd->num[k]*pfd->src[i+k];
     }
     for(int k = 0; k < pfd->den_ord; k++) {
       //if((pfd->dst[i+k] >= 1.0f)||(pfd->dst[i+k] <= -1.0f)) {
