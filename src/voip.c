@@ -348,8 +348,11 @@ int connection_recv(ConnectionData* pcd, void* buf, size_t length)
   transition();
   //based on state, call emit function which will decide to drop or accept packet based on prob
   int result = emission();
-  if(result == -1 || result == DROP) 
+  if(result == -1 || result == DROP) { 
+    printf("Packet Dropped.\n");
     return 1;
+  }
+
 }
 
 int connection_init(ConnectionData* pcd, const VoipArgs* pva)
