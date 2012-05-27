@@ -51,7 +51,7 @@ float undistort(float x);
 float sgn(float x);
 
 const float mu = 255.0f;
-const float qu = 15.0f;
+const float qu = 255.0f;
 
 QSAMPLE sample_to_qsample(SAMPLE x) {
   return (uint8_t)lroundf(qu*((distort(x)+1.0f)/2.0f));
