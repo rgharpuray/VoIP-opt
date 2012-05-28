@@ -1,7 +1,9 @@
 
 CFLAGS := -g -std=gnu99
 
-all: bin obj bin/voip bin/main bin/paread bin/pawrite bin/pareadwrite bin/udptestclient bin/udptestserv
+all: bin obj models bin/voip
+
+.PHONY: models clean
 
 bin:
 	mkdir bin
@@ -9,12 +11,17 @@ bin:
 obj:
 	mkdir obj
 
-bin/%: obj/%.o
-	gcc $< -lportaudio -o $@
+models:
+	chmod +x models/*.py
 
-obj/%.o: src/%.c
+bin/voip: obj/voip.o obj/markov.o
+	gcc $^ -lportaudio -o $@
+
+obj/voip.o: src/voip.c src/markov.h
 	gcc -c $(CFLAGS) $< -o $@
 
+obj/markov.o: src/markov.c src/markov.h
+	gcc -c $(CFLAGS) $< -o $@
 
 clean:
 	rm -f bin/* obj/*
