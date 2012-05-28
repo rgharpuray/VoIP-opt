@@ -33,7 +33,7 @@ float high_meantime = 0.3f;
 
 int connected = 0;
 
-static int packets_accepted = 0;
+static int packets_accepted = 1;
 static int packets_dropped = 0;
 
 inline QSAMPLE sample_to_qsample(SAMPLE x);
