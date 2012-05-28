@@ -113,7 +113,8 @@ const SAMPLE* filter_dst(FilterData* pfd);
 
 typedef enum CONCEALMODE {
   CM_SILENCE,
-  CM_REPEAT
+  CM_REPEAT,
+  CM_NOISE
 } CONCEALMODE;
 
 typedef struct {
@@ -188,6 +189,22 @@ static int voipCallback( const void *inputBuffer, void *outputBuffer,
       case CM_REPEAT:
         for(int i = 0; i < framesPerBuffer; i++) {
           pout[i] = data->prev_frame[i];
+        }
+        break;
+      case CM_NOISE:
+        {
+          float acc = 0.0f;
+          for(int i = 0; i < framesPerBuffer; i++) {
+            acc += (data->prev_frame[i]*data->prev_frame[i]);
+          }
+          acc /= (float)framesPerBuffer;
+          acc = sqrt(acc);
+          for(int i = 0; i < framesPerBuffer; i++) {
+            float rr = randgaussian()*acc;
+            if(rr > 1.0f) rr = 1.0f;
+            if(rr < -1.0f) rr = -1.0f;
+            pout[i] = rr;
+          }
         }
         break;
       default:
@@ -488,7 +505,8 @@ int parse_args(VoipArgs* pva, int argc, char* argv[])
     fprintf(stderr,"Usage: %s [server|ip-address] [port] [conceal mode]\n",argv[0]);
     fprintf(stderr,"  where [conceal mode] is one of:\n");
     fprintf(stderr,"    silence\n");
-    fprintf(stderr,"    repeat\n\n");
+    fprintf(stderr,"    repeat\n");
+    fprintf(stderr,"    noise\n\n");
     return 1;
   }
   
@@ -521,6 +539,9 @@ int parse_args(VoipArgs* pva, int argc, char* argv[])
   }
   else if(strcmp(argv[3],"repeat")==0) {
     pva->conceal_mode = CM_REPEAT;
+  }
+  else if(strcmp(argv[3],"noise")==0) {
+    pva->conceal_mode = CM_NOISE;
   }
   else {
     fprintf(stderr,"Error: Invalid conceal mode \"%s\"\n", argv[3]);

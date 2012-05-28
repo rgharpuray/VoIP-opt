@@ -13,9 +13,16 @@ static float* transition_rates;
 
 static int state;
 
+const float pi = 3.1415926f;
+
 float randf()
 {
   return ((float)rand())/(float)RAND_MAX; 
+}
+
+float randgaussian()
+{
+  return sqrt(-2*logf(randf()))*cosf(2*pi*randf());
 }
 
 /*functions for H.M.M.*/

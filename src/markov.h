@@ -10,3 +10,7 @@ void markov_initmodel_fromfile(FILE* f);
 
 void markov_transition();
 mmvalue markov_emission();
+
+float randf();
+float randgaussian();
+
