@@ -111,6 +111,11 @@ SAMPLE* filter_src(FilterData* pfd);
 void filter(FilterData* pfd);
 const SAMPLE* filter_dst(FilterData* pfd);
 
+typedef enum CONCEALMODE {
+  CM_SILENCE,
+  CM_REPEAT
+} CONCEALMODE;
+
 typedef struct {
   //buffering data
   QSAMPLE* inbuf;
@@ -120,9 +125,12 @@ typedef struct {
   //filtering data
   FilterData infilter;
   FilterData outfilter;
+  //concealment data
+  SAMPLE* prev_frame;
+  CONCEALMODE conceal_mode;
 } VoipData;
 
-void voipdata_init(VoipData* pvd)
+void voipdata_init(VoipData* pvd, CONCEALMODE conceal_mode)
 {
   pvd->inbuf = malloc(FRAMES_PER_BUFFER*sizeof(QSAMPLE));
   pvd->inbuf_valid = 0;
@@ -130,6 +138,9 @@ void voipdata_init(VoipData* pvd)
   pvd->outbuf_valid = 0;
   filterdata_init(&pvd->infilter, src_filter_num, sizeof(src_filter_num)/sizeof(SAMPLE)-1, src_filter_den, sizeof(src_filter_den)/sizeof(SAMPLE)-1);
   filterdata_init(&pvd->outfilter, dst_filter_num, sizeof(dst_filter_num)/sizeof(SAMPLE)-1, dst_filter_den, sizeof(dst_filter_den)/sizeof(SAMPLE)-1);
+  pvd->prev_frame = malloc(FRAMES_PER_BUFFER*sizeof(SAMPLE));
+  for(int i = 0; i < FRAMES_PER_BUFFER; i++) pvd->prev_frame[i] = 0.0f;
+  pvd->conceal_mode = conceal_mode;
 }
 
 static int voipCallback( const void *inputBuffer, void *outputBuffer,
@@ -163,7 +174,26 @@ static int voipCallback( const void *inputBuffer, void *outputBuffer,
     filter(&data->outfilter);
     //retrieve the data
     memcpy(outputBuffer,filter_dst(&data->outfilter),FRAMES_PER_BUFFER*sizeof(SAMPLE));
+    memcpy(data->prev_frame,filter_dst(&data->outfilter),FRAMES_PER_BUFFER*sizeof(SAMPLE));
     data->outbuf_valid = 0;
+  }
+  else {
+    SAMPLE* pout = (SAMPLE*)outputBuffer;
+    switch(data->conceal_mode) {
+      case CM_SILENCE:
+        for(int i = 0; i < framesPerBuffer; i++) {
+          pout[i] = 0.0f;
+        }
+        break;
+      case CM_REPEAT:
+        for(int i = 0; i < framesPerBuffer; i++) {
+          pout[i] = data->prev_frame[i];
+        }
+        break;
+      default:
+        fprintf(stderr,"Critical error: Invalid conceal mode (%u).\n",data->conceal_mode);
+        exit(1);
+    }
   }
   return paContinue;
 }
@@ -172,6 +202,7 @@ typedef struct {
   int is_server;
   in_addr_t ip_addr;
   uint16_t ip_port;
+  CONCEALMODE conceal_mode;
 } VoipArgs;
 
 typedef struct {
@@ -206,7 +237,7 @@ int main(int argc, char* argv[])
   
   //initialize VOIP data
   VoipData vd;
-  voipdata_init(&vd);
+  voipdata_init(&vd,va.conceal_mode);
   
   fprintf(stderr,"Starting audio stream...\n");
   
@@ -453,8 +484,11 @@ const SAMPLE* filter_dst(FilterData* pfd)
 
 int parse_args(VoipArgs* pva, int argc, char* argv[])
 {
-  if(argc != 3) {
-    fprintf(stderr,"Usage: %s [server|ip-address] [port]\n",argv[0]);
+  if(argc != 4) {
+    fprintf(stderr,"Usage: %s [server|ip-address] [port] [conceal mode]\n",argv[0]);
+    fprintf(stderr,"  where [conceal mode] is one of:\n");
+    fprintf(stderr,"    silence\n");
+    fprintf(stderr,"    repeat\n\n");
     return 1;
   }
   
@@ -481,5 +515,16 @@ int parse_args(VoipArgs* pva, int argc, char* argv[])
   pva->is_server = is_server;
   pva->ip_addr = ip_addr;
   pva->ip_port = (uint16_t)iport;
+  
+  if(strcmp(argv[3],"silence")==0) {
+    pva->conceal_mode = CM_SILENCE;
+  }
+  else if(strcmp(argv[3],"repeat")==0) {
+    pva->conceal_mode = CM_REPEAT;
+  }
+  else {
+    fprintf(stderr,"Error: Invalid conceal mode \"%s\"\n", argv[3]);
+    return 1;
+  }
   return 0;
 }

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <assert.h>
 #include "markov.h"
 
@@ -62,6 +63,9 @@ void markov_initmodel_lowhigh(float low_lr, float high_lr, float low_meanlength,
 void markov_initmodel_fromfile(FILE* f)
 {
   int i,j;
+  //seed the random generator
+  srand(time(NULL));
+  //start reading the file
   if(fscanf(f,"%u",&nstates)!=1) {
     fprintf(stderr,"Error: In reading markov model from file, couldn't read number of states.\n");
     exit(1);    
