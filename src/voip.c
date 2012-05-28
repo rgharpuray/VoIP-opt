@@ -386,6 +386,7 @@ int connection_init(ConnectionData* pcd, const VoipArgs* pva)
     //ready to start audio stream
     connected = 1;
   }
+  return 0;
 }
 /*
 typedef struct {
