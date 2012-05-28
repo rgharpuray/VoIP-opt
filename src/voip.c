@@ -33,6 +33,9 @@ float high_meantime = 0.3f;
 
 int connected = 0;
 
+static int packets_accepted = 0;
+static int packets_dropped = 0;
+
 inline QSAMPLE sample_to_qsample(SAMPLE x);
 inline SAMPLE qsample_to_sample(QSAMPLE x);
 
@@ -298,15 +301,19 @@ int connection_recv(ConnectionData* pcd, void* buf, size_t length)
       return -1;
     }
   }
+  if((packets_dropped + packets_accepted)%100 == 0) {
+    fprintf(stderr,"Drop rate: %f\n",(float)packets_dropped/(float)(packets_dropped+packets_accepted));
+  }
   //transition states as needed
   markov_transition();
   //based on state, call emit function which will decide to drop or accept packet based on prob
   mmvalue result = markov_emission();
   if(connected && (result == -1 || result == MM_DROP)) {
+    packets_dropped++;
     return 1;
   }
-  
   //returning 0 on success
+  packets_accepted++;
   return 0;
 }
 
